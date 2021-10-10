@@ -63,7 +63,7 @@ Event.OngoingGlobal {
     for (;;) {
         DisableCompletion();
         DisableScoring();
-        if (matchEnded && CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0 && lastRein == AllPlayers(Team.Team1)[0]) {
+        if (matchEnded && (swapSides || (CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0 && lastRein == AllPlayers(Team.Team1)[0]))) {
             if (swapSides) {
                  BigMessage(AllPlayers(), "Swapping sides");
                 MovePlayerToTeam(AllPlayers(Team.Team1)[0], Team.Team2, CountOf(AllPlayers(Team.Team2)));
@@ -88,12 +88,12 @@ Event.OngoingGlobal {
             RestartMatch();
         }
         
-        /*
-        if (matchEnded && CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0 && lastRein != PlayersInSlot(0, Team.Team1)) {
+        
+        if (matchEnded && (swapSides || (CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0 && lastRein != PlayersInSlot(0, Team.Team1)))) {
             // If the rein/brig from last time is different, we can restart
             matchEnded = false;
             RestartMatch();
-        }*/
+        }
 
         if (!matchEnded && CountOf(FilteredArray(AllLivingPlayers(Team.Team2), HasSpawned(ArrayElement()))) == 0 && CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0) {
             // Reinhardt/Brig wins
@@ -186,8 +186,13 @@ Event.OngoingPlayer {
             }
             else {
                 define closestPlayer = FirstOf(SortedArray(FilteredArray(AllLivingPlayers(Team.Team2), HasSpawned(ArrayElement())), DistanceBetween(EventPlayer(), ArrayElement())));
-                SetFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), EyePosition(closestPlayer)), Relative.ToWorld);
+                define timeToPlayer = DistanceBetween(EyePosition(EventPlayer()), EyePosition(closestPlayer))/ (26.66*5); // 500% projectile speed
+                define nextPlayerPos = EyePosition(closestPlayer) +  VelocityOf(closestPlayer)*timeToPlayer;
+                //nextPlayerPos = Vector(nextPlayerPos.X, EyePosition(closestPlayer).Y, nextPlayerPos.Z);
                 
+                //SetFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), EyePosition(closestPlayer)), Relative.ToWorld);
+                SetFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), nextPlayerPos), Relative.ToWorld); // Aim prediction?
+
                 if (AbsoluteValue(PositionOf(EventPlayer()).Y - PositionOf(closestPlayer).Y) <= 4.5) {
                     PressButton(EventPlayer(), Button.Ability1);
                 }
@@ -195,7 +200,8 @@ Event.OngoingPlayer {
                 PressButton(EventPlayer(), Button.Ability1);
                 define distToPlayer = DistanceBetween(EventPlayer(), closestPlayer);
                 if (distToPlayer > 2) {
-                    StartThrottleInDirection(EventPlayer(), DirectionTowards(EventPlayer(), closestPlayer), 100, Relative.ToWorld, ThrottleBehavior.AddToExistingThrottle);
+                    //StartThrottleInDirection(EventPlayer(), DirectionTowards(EventPlayer(), closestPlayer), 100, Relative.ToWorld, ThrottleBehavior.AddToExistingThrottle);
+                    StartThrottleInDirection(EventPlayer(), DirectionTowards(EventPlayer(), nextPlayerPos), 100, Relative.ToWorld, ThrottleBehavior.AddToExistingThrottle);
                 }
                 else {
                     StopThrottleInDirection(EventPlayer());
