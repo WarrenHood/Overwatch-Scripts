@@ -1,0 +1,222 @@
+rule: "ScalePlayers"
+Event.OngoingPlayer {
+    for (;;) {
+        if (EventPlayer().Hero() == Hero.Reinhardt || EventPlayer().Hero() == Hero.Brigitte) {
+            StartScalingPlayer(EventPlayer(), 2.0);
+            //DisableMovementCollisionWithEnvironment(EventPlayer());
+            SetMoveSpeed(EventPlayer(), 150);
+        }
+        else {
+            StartScalingPlayer(EventPlayer(), 0.3);
+            //EnableMovementCollisionWithEnvironment(EventPlayer());
+            if (EventPlayer().Hero() == Hero.Tracer) {
+                SetMoveSpeed(EventPlayer(), 250);
+            }
+            else {
+                SetMoveSpeed(EventPlayer(), 200);
+            }
+            
+        }
+        Wait(1);
+    }
+}
+
+rule: "FasterReinCharge"
+Event.OngoingPlayer {
+    for (;;) {
+        if (EventPlayer().Hero() == Hero.Reinhardt) {
+            if (IsUsingAbility1(EventPlayer())) {
+                SetMoveSpeed(EventPlayer(), 500);
+            }
+            else {
+                SetMoveSpeed(EventPlayer(), 150);
+            }
+        }
+        Wait(0.25); // Only wait if not reinhardt
+    }
+}
+
+rule: "ScaleDamage" 
+Event.OnDamageDealt {
+    if (EventPlayer().Hero() == Hero.Reinhardt || EventPlayer().Hero() == Hero.Brigitte) {
+        SetDamageDealt(EventPlayer(), 100.0);
+    }
+    else {
+        SetDamageDealt(EventPlayer(), 100.0/CountOf(AllPlayers(Team.Team2)));
+    }
+}
+
+
+rule: "Match Timer" 
+Event.OngoingGlobal {
+    define currentTime = 40 + (20.0 * CountOf(AllPlayers(Team.Team2)));
+    define hudText = CreateHudText(AllPlayers(Team.Team1), "Squish the bugs!", "Time Remaining", currentTime, Location.Top, -1, Color.Blue, Color.Red, Color.White);
+    define hudText2 = CreateHudText(AllPlayers(Team.Team2), "Try to survive!", "Time Remaining", currentTime, Location.Top, -1, Color.Blue, Color.Red, Color.White);
+    define hudText3 = CreateHudText(AllPlayers(), "Fly Swatting Simulator", null, null, Location.Right, -1, Color.Red, Color.Red, Color.Red);
+    define lastRein = null;
+    define matchEnded = false;
+    define swapSides = false;
+
+    DisableCompletion();
+    DisableScoring();
+
+    for (;;) {
+        DisableCompletion();
+        DisableScoring();
+        if (matchEnded && CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0 && lastRein == AllPlayers(Team.Team1)[0]) {
+            if (swapSides) {
+                 BigMessage(AllPlayers(), "Swapping sides");
+                MovePlayerToTeam(AllPlayers(Team.Team1)[0], Team.Team2, CountOf(AllPlayers(Team.Team2)));
+
+                // Move rein/brig to first free slot
+                for(define i=0; i < NumberOfSlots(Team.Team2); i++) {
+                    define currentPlayer = PlayersInSlot(i, Team.Team2);
+                    if (currentPlayer == null) {
+                        MovePlayerToTeam(PlayersInSlot(0, Team.Team1), Team.Team2, i);
+                        break;
+                    }
+                }
+
+                define nextRein = RandomValueInArray(AllPlayers(Team.Team2));
+                while (nextRein == lastRein || nextRein == null && CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0) {
+                    nextRein = RandomValueInArray(AllPlayers(Team.Team2));
+                }
+                MovePlayerToTeam(nextRein, Team.Team1, 0);
+            }
+           
+            matchEnded = false;
+            RestartMatch();
+        }
+        
+        /*
+        if (matchEnded && CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0 && lastRein != PlayersInSlot(0, Team.Team1)) {
+            // If the rein/brig from last time is different, we can restart
+            matchEnded = false;
+            RestartMatch();
+        }*/
+
+        if (!matchEnded && CountOf(FilteredArray(AllLivingPlayers(Team.Team2), HasSpawned(ArrayElement()))) == 0 && CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0) {
+            // Reinhardt/Brig wins
+            lastRein = AllPlayers(Team.Team1)[0];
+            matchEnded = true;
+
+            BigMessage(AllPlayers(Team.Team1), "You win!");
+            BigMessage(AllPlayers(Team.Team2), "You lose!");
+            Wait(1);
+        }
+
+        /*
+        if (MatchRound() > 1) {
+            if (!matchEnded && CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0) {
+                lastRein = AllPlayers(Team.Team1)[0];
+                matchEnded = true;
+            }
+            RestartMatch();
+        }*/
+
+        if (IsGameInProgress() && !matchEnded) {
+            //SetMatchTime(currentTime+1);
+            PauseMatchTime();
+            DisableGameModeHud(AllPlayers());
+            DestroyHudText(hudText);
+            DestroyHudText(hudText2);
+            DestroyHudText(hudText3);
+            hudText = CreateHudText(AllPlayers(Team.Team1), "Squish the bugs", "Time Remaining", currentTime, Location.Top, -1, Color.Blue, Color.Red, Color.White);
+            hudText2 = CreateHudText(AllPlayers(Team.Team2), "Try to survive!", "Time Remaining", currentTime, Location.Top, -1, Color.Blue, Color.Red, Color.White);
+            hudText3 = CreateHudText(AllPlayers(), "Fly Swatting Simulator", null, null, Location.Right, -1, Color.Red, Color.Red, Color.Red);
+            if (currentTime <= 0 || CountOf(FilteredArray(AllLivingPlayers(Team.Team1), HasSpawned(ArrayElement()))) == 0) {
+                // Bugs/Flies win
+                currentTime = 40 + (20.0 * CountOf(AllPlayers(Team.Team2)));
+                BigMessage(AllPlayers(Team.Team1), "You failed to squish the bugs in time!");
+                BigMessage(AllPlayers(Team.Team2), "You win!");
+                
+                if (!matchEnded && CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0) {
+                    lastRein = AllPlayers(Team.Team1)[0];
+                }
+                matchEnded = true;
+            }
+            currentTime--;
+        }
+        else {
+            currentTime = 40 + (20.0 * CountOf(AllPlayers(Team.Team2)));
+        }
+        Wait(1);
+    }
+}
+
+rule: "Spawn_Bot"
+Event.OngoingGlobal {
+    define reinbot = null;
+    define useBot = true;
+    for (;;) {
+        if (useBot) {
+            if (CountOf(AllPlayers(Team.Team1)) == 0) {
+                reinbot = CreateDummyBot(Hero.Reinhardt, Team.Team1, 0);
+                StartForcingDummyBotName(reinbot, "ReinBot");
+            }
+        }
+        Wait(0.25);
+    }
+}
+
+rule: "ReinBot_Actions" 
+Event.OngoingPlayer {
+    for (;;) {
+        if (TeamOf(EventPlayer()) == Team.Team1 && !IsGameInProgress() && !IsWaitingForPlayers()) {
+            DisallowButton(EventPlayer(), Button.Ability1);
+            DisallowButton(EventPlayer(), Button.Ability2);
+            DisallowButton(EventPlayer(), Button.PrimaryFire);
+            DisallowButton(EventPlayer(), Button.SecondaryFire);
+            SetMoveSpeed(EventPlayer(), 0);
+        }
+        else {
+            AllowButton(EventPlayer(), Button.Ability1);
+            AllowButton(EventPlayer(), Button.Ability2);
+            AllowButton(EventPlayer(), Button.PrimaryFire);
+            AllowButton(EventPlayer(), Button.SecondaryFire);
+        }
+        if (IsDummyBot(EventPlayer()) && IsGameInProgress()) {
+            if (CountOf(AllLivingPlayers(Team.Team2)) == 0) {
+                if (IsCrouching(EventPlayer())) {
+                    StartHoldingButton(EventPlayer(), Button.Crouch);
+                }
+                else {
+                    StopHoldingButton(EventPlayer(), Button.Crouch);
+                }
+            }
+            else {
+                define closestPlayer = FirstOf(SortedArray(FilteredArray(AllLivingPlayers(Team.Team2), HasSpawned(ArrayElement())), DistanceBetween(EventPlayer(), ArrayElement())));
+                SetFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), EyePosition(closestPlayer)), Relative.ToWorld);
+                
+                if (AbsoluteValue(PositionOf(EventPlayer()).Y - PositionOf(closestPlayer).Y) <= 4.5) {
+                    PressButton(EventPlayer(), Button.Ability1);
+                }
+                
+                PressButton(EventPlayer(), Button.Ability1);
+                define distToPlayer = DistanceBetween(EventPlayer(), closestPlayer);
+                if (distToPlayer > 2) {
+                    StartThrottleInDirection(EventPlayer(), DirectionTowards(EventPlayer(), closestPlayer), 100, Relative.ToWorld, ThrottleBehavior.AddToExistingThrottle);
+                }
+                else {
+                    StopThrottleInDirection(EventPlayer());
+                }            
+                if (distToPlayer <= 5) {
+                    PressButton(EventPlayer(), Button.PrimaryFire);
+                }
+                else {
+                    PressButton(EventPlayer(), Button.Ability2);
+                }
+            }
+            
+        }
+        Wait(0.25);
+    }
+}
+
+rule: 'Squishy noise'
+Event.OnDeath {
+    if (EventPlayer().Team() == Team.Team2) {
+        //CreateEffect(AllPlayers(), Effect.DecalSound, Color.Red, EventPlayer(), 10);
+        PlayEffect(AllPlayers(), PlayEffect.BadExplosion, Color.Red, EventPlayer(), 20.0);
+    }
+}

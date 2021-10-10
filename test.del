@@ -1,0 +1,57 @@
+rule: "Lifesteal" 
+Event.OnDamageDealt {
+    define lifeStealPerc = 1- (Health(EventPlayer())/MaxHealth(EventPlayer()));
+    SetDamageDealt(EventPlayer(), 100+(50*lifeStealPerc));
+    SetPlayerHealth(EventPlayer(), Health(EventPlayer()) + (EventDamage()*lifeStealPerc));
+}
+
+rule: "Kill to heal" 
+Event.OnDeath {
+    if (Attacker() != null) {
+        PlayEffect(AllPlayers(), PlayEffect.GoodExplosion, Color.LimeGreen, PositionOf(Attacker()), 5.0);
+        SetPlayerHealth(Attacker(), Health(Attacker()) + 50);
+    }
+}
+
+rule: "Constantly lose health"
+Event.OngoingPlayer {
+    for(;;) {
+        Damage(EventPlayer(), null, MaxHealth(EventPlayer())/100.0);
+        Wait(1);
+    }
+}
+
+rule: "Prevent Healing"
+Event.OnHealingTaken {
+    SetHealingReceived(EventPlayer(), 0);
+}
+
+rule: "Scale On Death"
+Event.OnDeath {
+    define playerScale = (NumberOfEliminations(EventPlayer())+1)/(NumberOfDeaths(EventPlayer())+1);
+    if (playerScale > 1.5) playerScale = 1.5;
+    if (playerScale < 0.5) playerScale = 0.5;
+    if (playerScale < 1.0) {
+        SetMoveSpeed(EventPlayer(), 100.0*(1/playerScale));
+    }
+    else {
+        SetMoveSpeed(EventPlayer(), 100);
+    }
+    StopScalingPlayer(EventPlayer());
+    StartScalingPlayer(EventPlayer(), playerScale, false);
+}
+
+rule: "Scale On Elim"
+Event.OnElimination {
+    define playerScale = (NumberOfEliminations(EventPlayer())+1)/(NumberOfDeaths(EventPlayer())+1);
+    if (playerScale > 1.5) playerScale = 1.5;
+    if (playerScale < 0.5) playerScale = 0.5;
+    if (playerScale < 1.0) {
+        SetMoveSpeed(EventPlayer(), 100.0*(1/playerScale));
+    }
+    else {
+        SetMoveSpeed(EventPlayer(), 100);
+    }
+    StopScalingPlayer(EventPlayer());
+    StartScalingPlayer(EventPlayer(), playerScale, false);
+}
