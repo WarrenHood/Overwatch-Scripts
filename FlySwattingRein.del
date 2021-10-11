@@ -146,19 +146,44 @@ Event.OngoingGlobal {
 rule: "Spawn_Bot"
 Event.OngoingGlobal {
     define reinbot = null;
-    define useBot = true;
+    define useRein = true;
+    define roachCount = 5;
+    define flyCount = 6;
+
     for (;;) {
-        if (useBot) {
+        if (useRein) {
             if (CountOf(AllPlayers(Team.Team1)) == 0) {
                 reinbot = CreateDummyBot(Hero.Reinhardt, Team.Team1, 0);
                 StartForcingDummyBotName(reinbot, "ReinBot");
+            }
+        }
+        // Spawn roaches
+        if (CountOf(AllPlayers(Team.Team2)) < roachCount + flyCount) {
+            for (define i=0; i < roachCount; i++) {
+                for(define iSlot=0; iSlot<NumberOfSlots(Team.Team2); iSlot++) {
+                    if (PlayersInSlot(iSlot, Team.Team2) == null) {
+                        CreateDummyBot(Hero.Tracer, Team.Team2, iSlot);
+                        break;
+                    }
+                }
+            }
+        }
+        // Spawn flies
+        if (CountOf(AllPlayers(Team.Team2)) < roachCount + flyCount) {
+            for (define i=0; i < roachCount; i++) {
+                for(define iSlot=0; iSlot<NumberOfSlots(Team.Team2); iSlot++) {
+                    if (PlayersInSlot(iSlot, Team.Team2) == null) {
+                        CreateDummyBot(Hero.Pharah, Team.Team2, iSlot);
+                        break;
+                    }
+                }
             }
         }
         Wait(0.25);
     }
 }
 
-rule: "ReinBot_Actions" 
+rule: "Bot_Actions" 
 Event.OngoingPlayer {
     for (;;) {
         if (TeamOf(EventPlayer()) == Team.Team1 && !IsGameInProgress() && !IsWaitingForPlayers()) {
@@ -174,7 +199,42 @@ Event.OngoingPlayer {
             AllowButton(EventPlayer(), Button.PrimaryFire);
             AllowButton(EventPlayer(), Button.SecondaryFire);
         }
-        if (IsDummyBot(EventPlayer()) && IsGameInProgress()) {
+        
+        //Roach logic
+        if (IsDummyBot(EventPlayer()) && EventPlayer().Hero() == Hero.Tracer && IsGameInProgress()) {
+            define direction = Vector(RandomReal(-100, 100), 0, RandomReal(-100, 100)).Normalize();
+            SetFacing(EventPlayer(), ClosestPlayerTo(EventPlayer(), Team.Team1), Relative.ToWorld);
+            StartThrottleInDirection(EventPlayer(), direction, 100, Relative.ToPlayer, ThrottleBehavior.AddToExistingThrottle);
+
+            if (RandomReal(0,1) < 0.75) {
+                PressButton(EventPlayer(), Button.Ability1);
+            }
+            else if (!IsJumping()) {
+                PressButton(EventPlayer(), Button.Jump);
+            }
+            
+        }
+
+        //Pharah logic
+        if (IsDummyBot(EventPlayer()) && EventPlayer().Hero() == Hero.Pharah && IsGameInProgress()) {
+            define direction = Vector(RandomReal(-100, 100), 0, RandomReal(-100, 100)).Normalize();
+            SetFacing(EventPlayer(), ClosestPlayerTo(EventPlayer(), Team.Team1), Relative.ToWorld);
+            StartThrottleInDirection(EventPlayer(), direction, 100, Relative.ToPlayer, ThrottleBehavior.AddToExistingThrottle);
+
+            if (RandomReal(0,1) < 0.75) {
+                PressButton(EventPlayer(), Button.Ability1);
+            }
+            if (RandomReal(0,1) < 0.75) {
+                StartHoldingButton(EventPlayer(), Button.Jump);
+            }
+            else {
+                StopHoldingButton(EventPlayer(), Button.Jump);
+            }
+        }
+
+
+        // Reinhardt logic
+        if (IsDummyBot(EventPlayer()) && EventPlayer().Hero() == Hero.Reinhardt && IsGameInProgress()) {
             if (CountOf(FilteredArray(AllLivingPlayers(Team.Team2), HasSpawned(ArrayElement()))) > 0) {
                 define closestPlayer = FirstOf(SortedArray(FilteredArray(AllLivingPlayers(Team.Team2), HasSpawned(ArrayElement())), DistanceBetween(EventPlayer(), ArrayElement())));
                 define timeToPlayer = DistanceBetween(EyePosition(EventPlayer()), EyePosition(closestPlayer))/ (26.66*5); // 500% projectile speed
@@ -215,7 +275,9 @@ Event.OngoingPlayer {
 rule: "Rein_crouch"
 Event.OngoingPlayer {
     for (;;) {
-        if (IsDummyBot(EventPlayer())) {
+
+        //Reinhardt tbag
+        if (IsDummyBot(EventPlayer()) && EventPlayer().Hero() == Hero.Reinhardt) {
             if (CountOf(AllLivingPlayers(Team.Team2)) == 0 || !IsGameInProgress()) {
                 if (!IsCrouching(EventPlayer())) {
                     StartHoldingButton(EventPlayer(), Button.Crouch);
