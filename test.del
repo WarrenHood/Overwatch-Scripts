@@ -13,13 +13,14 @@ Event.OnDeath {
     }
 }
 
+/*
 rule: "Constantly lose health"
 Event.OngoingPlayer {
     for(;;) {
         Damage(EventPlayer(), null, MaxHealth(EventPlayer())/100.0);
         Wait(1);
     }
-}
+}*/
 
 rule: "Prevent Healing"
 Event.OnHealingTaken {

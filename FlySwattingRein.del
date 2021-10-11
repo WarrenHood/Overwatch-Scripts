@@ -63,7 +63,7 @@ Event.OngoingGlobal {
     for (;;) {
         DisableCompletion();
         DisableScoring();
-        if (matchEnded && (swapSides || (CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0 && lastRein == AllPlayers(Team.Team1)[0]))) {
+        if (matchEnded && (!swapSides || (CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0 && lastRein == AllPlayers(Team.Team1)[0]))) {
             if (swapSides) {
                  BigMessage(AllPlayers(), "Swapping sides");
                 MovePlayerToTeam(AllPlayers(Team.Team1)[0], Team.Team2, CountOf(AllPlayers(Team.Team2)));
@@ -89,7 +89,7 @@ Event.OngoingGlobal {
         }
         
         
-        if (matchEnded && (swapSides || (CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0 && lastRein != PlayersInSlot(0, Team.Team1)))) {
+        if (matchEnded && (!swapSides || (CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0 && lastRein != PlayersInSlot(0, Team.Team1)))) {
             // If the rein/brig from last time is different, we can restart
             matchEnded = false;
             RestartMatch();
