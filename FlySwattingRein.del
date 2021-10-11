@@ -1,6 +1,53 @@
 globalvar define currentTime;
 globalvar define fliesEliminated;
 globalvar define roachesEliminated;
+globalvar define useRein = true;
+globalvar define roachCount = 5;
+globalvar define flyCount = 6;
+
+
+rule: "Spawn_Bot"
+Event.OngoingGlobal {
+    define reinbot = null;
+    // define debugHud1 = CreateHudText(AllPlayers(), "Slots on team 2", NumberOfSlots(Team.Team2), null, Location.Left);
+
+    for (;;) {
+        if (useRein) {
+            if (CountOf(AllPlayers(Team.Team1)) == 0) {
+                reinbot = CreateDummyBot(Hero.Reinhardt, Team.Team1, 0);
+                StartForcingDummyBotName(reinbot, "ReinBot");
+            }
+        }
+
+        if (!IsAssemblingHeroes()) {
+            //DestroyHudText(debugHud1);
+            //debugHud1 = CreateHudText(AllPlayers(), "Slots on team 2", NumberOfSlots(Team.Team2), null, Location.Left);
+
+            // Spawn roaches
+            for (define i=0; i < roachCount - roachesEliminated - CountOf(FilteredArray(AllLivingPlayers(Team.Team2), HeroOf(ArrayElement()) == Hero.Tracer)); i++) {
+                for(define iSlot=NumberOfSlots(Team.Team2); iSlot<NumberOfSlots(Team.Team2)+12; iSlot++) {
+                    if (PlayersInSlot(iSlot, Team.Team2) == null) {
+                        StartForcingDummyBotName(CreateDummyBot(Hero.Tracer, Team.Team2, iSlot), "Roach");
+                        break;
+                    }
+                }
+            }
+
+            // Spawn flies
+            for (define i=0; i < flyCount - fliesEliminated - CountOf(FilteredArray(AllLivingPlayers(Team.Team2), HeroOf(ArrayElement()) == Hero.Pharah)); i++) {
+                for(define iSlot=NumberOfSlots(Team.Team2); iSlot<NumberOfSlots(Team.Team2)+12; iSlot++) {
+                    if (PlayersInSlot(iSlot, Team.Team2) == null) {
+                        StartForcingDummyBotName(CreateDummyBot(Hero.Pharah, Team.Team2, iSlot), "Fly");
+                        break;
+                    }
+                }
+            }
+        }
+
+        
+        Wait(0.25);
+    }
+}
 
 rule: "ScalePlayers"
 Event.OngoingPlayer {
@@ -53,9 +100,9 @@ Event.OnDamageDealt {
 rule: "Death points"
 Event.OnDeath {
     if (EventPlayer().Team() == Team.Team2) {
+        if (EventPlayer().Hero() == Hero.Pharah) fliesEliminated++;
+        if (EventPlayer().Hero() == Hero.Tracer) roachesEliminated++;
         if (IsDummyBot(EventPlayer())) {
-            if (EventPlayer().Hero() == Hero.Pharah) fliesEliminated++;
-            if (EventPlayer().Hero() == Hero.Tracer) roachesEliminated++;
             BigMessage(AllPlayers(Team.Team1), "Squished bug (Bot) for an additional 10 seconds");
             currentTime += 10;
         }
@@ -103,10 +150,10 @@ Event.OngoingGlobal {
 
                 // Move someone to the rein/brig team
                 define nextRein = RandomValueInArray(AllPlayers(Team.Team2));
-                define attemptsRemaining = 5;
-                while ((nextRein == lastRein || nextRein == null || IsDummyBot(nextRein)) && attemptsRemaining >= 0) {
+                define attemptsRemainingCount = 5;
+                while ((nextRein == lastRein || nextRein == null || IsDummyBot(nextRein)) && attemptsRemainingCount >= 0) {
                     nextRein = RandomValueInArray(FilteredArray(AllPlayers(Team.Team2), !IsDummyBot(ArrayElement())));
-                    attemptsRemaining--;
+                    attemptsRemainingCount--;
                 }
                 if (nextRein != lastRein) {
                     MovePlayerToTeam(nextRein, Team.Team1, 0);
@@ -168,46 +215,6 @@ Event.OngoingGlobal {
             currentTime = 40;// + (20.0 * CountOf(AllPlayers(Team.Team2)));
         }
         Wait(1);
-    }
-}
-
-rule: "Spawn_Bot"
-Event.OngoingGlobal {
-    define reinbot = null;
-    define useRein = true;
-    define roachCount = 5;
-    define flyCount = 6;
-
-    for (;;) {
-        if (useRein) {
-            if (CountOf(AllPlayers(Team.Team1)) == 0) {
-                reinbot = CreateDummyBot(Hero.Reinhardt, Team.Team1, 0);
-                StartForcingDummyBotName(reinbot, "ReinBot");
-            }
-        }
-        // Spawn roaches
-        if (CountOf(AllPlayers(Team.Team2)) < roachCount + flyCount - roachesEliminated - fliesEliminated) {
-            for (define i=0; i < roachCount - roachesEliminated; i++) {
-                for(define iSlot=0; iSlot<NumberOfSlots(Team.Team2); iSlot++) {
-                    if (PlayersInSlot(iSlot, Team.Team2) == null) {
-                        StartForcingDummyBotName(CreateDummyBot(Hero.Tracer, Team.Team2, iSlot), "Roach");
-                        break;
-                    }
-                }
-            }
-        }
-        // Spawn flies
-        if (CountOf(AllPlayers(Team.Team2)) < roachCount + flyCount - roachesEliminated - fliesEliminated) {
-            for (define i=0; i < flyCount - fliesEliminated; i++) {
-                for(define iSlot=0; iSlot<NumberOfSlots(Team.Team2); iSlot++) {
-                    if (PlayersInSlot(iSlot, Team.Team2) == null) {
-                        StartForcingDummyBotName(CreateDummyBot(Hero.Pharah, Team.Team2, iSlot), "Fly");
-                        break;
-                    }
-                }
-            }
-        }
-        Wait(0.25);
     }
 }
 
