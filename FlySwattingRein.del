@@ -113,11 +113,10 @@ Event.OngoingGlobal {
             }
             RestartMatch();
         }*/
-
+        DisableGameModeHud(AllPlayers());
         if (IsGameInProgress() && !matchEnded) {
             //SetMatchTime(currentTime+1);
             PauseMatchTime();
-            DisableGameModeHud(AllPlayers());
             DestroyHudText(hudText);
             DestroyHudText(hudText2);
             DestroyHudText(hudText3);
@@ -176,30 +175,22 @@ Event.OngoingPlayer {
             AllowButton(EventPlayer(), Button.SecondaryFire);
         }
         if (IsDummyBot(EventPlayer()) && IsGameInProgress()) {
-            if (CountOf(AllLivingPlayers(Team.Team2)) == 0) {
-                if (IsCrouching(EventPlayer())) {
-                    StartHoldingButton(EventPlayer(), Button.Crouch);
-                }
-                else {
-                    StopHoldingButton(EventPlayer(), Button.Crouch);
-                }
-            }
-            else {
+            if (CountOf(FilteredArray(AllLivingPlayers(Team.Team2), HasSpawned(ArrayElement()))) > 0) {
                 define closestPlayer = FirstOf(SortedArray(FilteredArray(AllLivingPlayers(Team.Team2), HasSpawned(ArrayElement())), DistanceBetween(EventPlayer(), ArrayElement())));
                 define timeToPlayer = DistanceBetween(EyePosition(EventPlayer()), EyePosition(closestPlayer))/ (26.66*5); // 500% projectile speed
                 define nextPlayerPos = EyePosition(closestPlayer) +  VelocityOf(closestPlayer)*timeToPlayer;
                 //nextPlayerPos = Vector(nextPlayerPos.X, EyePosition(closestPlayer).Y, nextPlayerPos.Z);
-                
+                    
                 //SetFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), EyePosition(closestPlayer)), Relative.ToWorld);
                 SetFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), nextPlayerPos), Relative.ToWorld); // Aim prediction?
 
                 if (AbsoluteValue(PositionOf(EventPlayer()).Y - PositionOf(closestPlayer).Y) <= 4.5) {
                     PressButton(EventPlayer(), Button.Ability1);
                 }
-                
+                    
                 PressButton(EventPlayer(), Button.Ability1);
                 define distToPlayer = DistanceBetween(EventPlayer(), closestPlayer);
-                if (distToPlayer > 2) {
+                if (distToPlayer > 2 ) {
                     //StartThrottleInDirection(EventPlayer(), DirectionTowards(EventPlayer(), closestPlayer), 100, Relative.ToWorld, ThrottleBehavior.AddToExistingThrottle);
                     StartThrottleInDirection(EventPlayer(), DirectionTowards(EventPlayer(), nextPlayerPos), 100, Relative.ToWorld, ThrottleBehavior.AddToExistingThrottle);
                 }
@@ -213,7 +204,26 @@ Event.OngoingPlayer {
                     PressButton(EventPlayer(), Button.Ability2);
                 }
             }
-            
+            else {
+                StopThrottleInDirection(EventPlayer());
+            }
+        }
+        Wait(0.25);
+    }
+}
+
+rule: "Rein_crouch"
+Event.OngoingPlayer {
+    for (;;) {
+        if (IsDummyBot(EventPlayer())) {
+            if (CountOf(AllLivingPlayers(Team.Team2)) == 0 || !IsGameInProgress()) {
+                if (!IsCrouching(EventPlayer())) {
+                    StartHoldingButton(EventPlayer(), Button.Crouch);
+                }
+                else {
+                    StopHoldingButton(EventPlayer(), Button.Crouch);
+                }
+            }
         }
         Wait(0.25);
     }
