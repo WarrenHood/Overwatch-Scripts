@@ -1,4 +1,6 @@
 globalvar define currentTime;
+globalvar define fliesEliminated;
+globalvar define roachesEliminated;
 
 rule: "ScalePlayers"
 Event.OngoingPlayer {
@@ -52,6 +54,8 @@ rule: "Death points"
 Event.OnDeath {
     if (EventPlayer().Team() == Team.Team2) {
         if (IsDummyBot(EventPlayer())) {
+            if (EventPlayer().Hero() == Hero.Pharah) fliesEliminated++;
+            if (EventPlayer().Hero() == Hero.Tracer) roachesEliminated++;
             BigMessage(AllPlayers(Team.Team1), "Squished bug (Bot) for an additional 10 seconds");
             currentTime += 10;
         }
@@ -65,6 +69,8 @@ Event.OnDeath {
 rule: "Match Timer" 
 Event.OngoingGlobal {
     currentTime = 40; // + (20.0 * CountOf(AllPlayers(Team.Team2)));
+    roachesEliminated = 0;
+    fliesEliminated = 0;
     define hudText = CreateHudText(AllPlayers(Team.Team1), "Squish the bugs!", "Time Remaining", currentTime, Location.Top, -1, Color.Blue, Color.Red, Color.White);
     define hudText2 = CreateHudText(AllPlayers(Team.Team2), "Try to survive!", "Time Remaining", currentTime, Location.Top, -1, Color.Blue, Color.Red, Color.White);
     define hudText3 = CreateHudText(AllPlayers(), "Fly Swatting Simulator", null, null, Location.Right, -1, Color.Red, Color.Red, Color.Red);
@@ -79,6 +85,8 @@ Event.OngoingGlobal {
         DisableCompletion();
         DisableScoring();
         if (matchEnded) {
+            roachesEliminated = 0;
+            fliesEliminated = 0;
             if (swapSides) {
                  BigMessage(AllPlayers(), "Swapping sides");
 
@@ -178,8 +186,8 @@ Event.OngoingGlobal {
             }
         }
         // Spawn roaches
-        if (CountOf(AllPlayers(Team.Team2)) < roachCount + flyCount) {
-            for (define i=0; i < roachCount; i++) {
+        if (CountOf(AllPlayers(Team.Team2)) < roachCount + flyCount - roachesEliminated - fliesEliminated) {
+            for (define i=0; i < roachCount - roachesEliminated; i++) {
                 for(define iSlot=0; iSlot<NumberOfSlots(Team.Team2); iSlot++) {
                     if (PlayersInSlot(iSlot, Team.Team2) == null) {
                         StartForcingDummyBotName(CreateDummyBot(Hero.Tracer, Team.Team2, iSlot), "Roach");
@@ -189,8 +197,8 @@ Event.OngoingGlobal {
             }
         }
         // Spawn flies
-        if (CountOf(AllPlayers(Team.Team2)) < roachCount + flyCount) {
-            for (define i=0; i < flyCount; i++) {
+        if (CountOf(AllPlayers(Team.Team2)) < roachCount + flyCount - roachesEliminated - fliesEliminated) {
+            for (define i=0; i < flyCount - fliesEliminated; i++) {
                 for(define iSlot=0; iSlot<NumberOfSlots(Team.Team2); iSlot++) {
                     if (PlayersInSlot(iSlot, Team.Team2) == null) {
                         StartForcingDummyBotName(CreateDummyBot(Hero.Pharah, Team.Team2, iSlot), "Fly");
