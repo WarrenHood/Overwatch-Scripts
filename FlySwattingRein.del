@@ -190,7 +190,7 @@ Event.OngoingGlobal {
         }
         // Spawn flies
         if (CountOf(AllPlayers(Team.Team2)) < roachCount + flyCount) {
-            for (define i=0; i < roachCount; i++) {
+            for (define i=0; i < flyCount; i++) {
                 for(define iSlot=0; iSlot<NumberOfSlots(Team.Team2); iSlot++) {
                     if (PlayersInSlot(iSlot, Team.Team2) == null) {
                         StartForcingDummyBotName(CreateDummyBot(Hero.Pharah, Team.Team2, iSlot), "Fly");
