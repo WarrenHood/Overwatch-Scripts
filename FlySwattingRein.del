@@ -308,10 +308,11 @@ Event.OngoingPlayer {
                     StopHoldingButton(EventPlayer(), Button.Crouch);
                 }
             }
+            else if (IsCrouching(EventPlayer())) {
+                StopHoldingButton(EventPlayer(), Button.Crouch);
+            }
         }
-        else if (IsCrouching(EventPlayer())) {
-            StopHoldingButton(EventPlayer(), Button.Crouch);
-        }
+        
         Wait(0.25);
     }
 }
