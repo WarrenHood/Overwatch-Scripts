@@ -1,3 +1,5 @@
+globalvar define currentTime;
+
 rule: "ScalePlayers"
 Event.OngoingPlayer {
     for (;;) {
@@ -46,10 +48,23 @@ Event.OnDamageDealt {
     }
 }
 
+rule: "Death points"
+Event.OnDeath {
+    if (EventPlayer().Team() == Team.Team2) {
+        if (IsDummyBot(EventPlayer())) {
+            BigMessage(AllPlayers(Team.Team1), "Squished bug (Bot) for an additional 10 seconds");
+            currentTime += 10;
+        }
+        else {
+            BigMessage(AllPlayers(Team.Team1), "Squished bug (Human) for an additional 20 seconds");
+            currentTime += 20;
+        }
+    }
+}
 
 rule: "Match Timer" 
 Event.OngoingGlobal {
-    define currentTime = 40 + (20.0 * CountOf(AllPlayers(Team.Team2)));
+    currentTime = 40; // + (20.0 * CountOf(AllPlayers(Team.Team2)));
     define hudText = CreateHudText(AllPlayers(Team.Team1), "Squish the bugs!", "Time Remaining", currentTime, Location.Top, -1, Color.Blue, Color.Red, Color.White);
     define hudText2 = CreateHudText(AllPlayers(Team.Team2), "Try to survive!", "Time Remaining", currentTime, Location.Top, -1, Color.Blue, Color.Red, Color.White);
     define hudText3 = CreateHudText(AllPlayers(), "Fly Swatting Simulator", null, null, Location.Right, -1, Color.Red, Color.Red, Color.Red);
@@ -142,7 +157,7 @@ Event.OngoingGlobal {
             currentTime--;
         }
         else {
-            currentTime = 40 + (20.0 * CountOf(AllPlayers(Team.Team2)));
+            currentTime = 40;// + (20.0 * CountOf(AllPlayers(Team.Team2)));
         }
         Wait(1);
     }
