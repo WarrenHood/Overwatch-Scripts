@@ -243,17 +243,21 @@ Event.OngoingPlayer {
         
         //Roach logic
         if (IsDummyBot(EventPlayer()) && EventPlayer().Hero() == Hero.Tracer && IsGameInProgress()) {
-            define direction = DirectionTowards(EyePosition(AllLivingPlayers(Team.Team1)[0]), EyePosition(EventPlayer()));
+            define direction = Vector(RandomReal(-100, 100), 0, RandomReal(-100, 100)).Normalize();
             direction = Vector(direction.X, EyePosition(EventPlayer()).Y, direction.Z);
             define bestDir = direction;
             define rayHit = RayCastHitPosition(EyePosition(EventPlayer()), EyePosition(EventPlayer()) + direction*5.5, AllPlayers());
-            define rayDist = rayHit.DistanceTo(EventPlayer());
+            define rayDist = 10*rayHit.DistanceTo(EventPlayer()) + rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
+            //define rayDist = rayHit.DistanceTo(EventPlayer());
+            //define rayDist = rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
             define bestDist = rayDist;
 
             for (define i=0; i<7; i++) {
                 direction = Vector(RandomReal(-100, 100), 0, RandomReal(-100, 100)).Normalize();
                 rayHit = RayCastHitPosition(EyePosition(EventPlayer()), EyePosition(EventPlayer()) + direction*5.5, AllPlayers());
-                rayDist = rayHit.DistanceTo(EventPlayer());
+                rayDist = 10*rayHit.DistanceTo(EventPlayer()) + rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
+                //rayDist = rayHit.DistanceTo(EventPlayer());
+                //rayDist = rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
                 if (rayDist > bestDist) {
                     bestDist = rayDist;
                     bestDir = Vector(direction.X, direction.Y, direction.Z);
@@ -277,17 +281,21 @@ Event.OngoingPlayer {
 
         //Pharah logic
         if (IsDummyBot(EventPlayer()) && EventPlayer().Hero() == Hero.Pharah && IsGameInProgress()) {
-            define direction = DirectionTowards(EyePosition(AllLivingPlayers(Team.Team1)[0]), EyePosition(EventPlayer()));
+            define direction = Vector(RandomReal(-100, 100), 0, RandomReal(-100, 100)).Normalize();
             direction = Vector(direction.X, EyePosition(EventPlayer()).Y, direction.Z);
             define bestDir = direction;
             define rayHit = RayCastHitPosition(EyePosition(EventPlayer()), EyePosition(EventPlayer()) + direction*5.5, AllPlayers());
-            define rayDist = rayHit.DistanceTo(EventPlayer());
+            define rayDist = 10*rayHit.DistanceTo(EventPlayer()) + rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
+            //define rayDist = rayHit.DistanceTo(EventPlayer());
+            //define rayDist = rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
             define bestDist = rayDist;
 
             for (define i=0; i<7; i++) {
                 direction = Vector(RandomReal(-100, 100), 0, RandomReal(-100, 100)).Normalize();
                 rayHit = RayCastHitPosition(EyePosition(EventPlayer()), EyePosition(EventPlayer()) + direction*5.5, AllPlayers());
-                rayDist = rayHit.DistanceTo(EventPlayer());
+                rayDist = 10*rayHit.DistanceTo(EventPlayer()) + rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
+                //rayDist = rayHit.DistanceTo(EventPlayer());
+                //rayDist = rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
                 if (rayDist > bestDist) {
                     bestDist = rayDist;
                     bestDir = Vector(direction.X, direction.Y, direction.Z);
