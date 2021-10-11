@@ -243,9 +243,26 @@ Event.OngoingPlayer {
         
         //Roach logic
         if (IsDummyBot(EventPlayer()) && EventPlayer().Hero() == Hero.Tracer && IsGameInProgress()) {
-            define direction = Vector(RandomReal(-100, 100), 0, RandomReal(-100, 100)).Normalize();
+            define direction = DirectionTowards(EyePosition(AllLivingPlayers(Team.Team1)[0]), EyePosition(EventPlayer()));
+            direction = Vector(direction.X, EyePosition(EventPlayer()).Y, direction.Z);
+            define bestDir = direction;
+            define rayHit = RayCastHitPosition(EyePosition(EventPlayer()), EyePosition(EventPlayer()) + direction*5.5, AllPlayers());
+            define rayDist = rayHit.DistanceTo(EventPlayer());
+            define bestDist = rayDist;
+
+            for (define i=0; i<7; i++) {
+                direction = Vector(RandomReal(-100, 100), 0, RandomReal(-100, 100)).Normalize();
+                rayHit = RayCastHitPosition(EyePosition(EventPlayer()), EyePosition(EventPlayer()) + direction*5.5, AllPlayers());
+                rayDist = rayHit.DistanceTo(EventPlayer());
+                if (rayDist > bestDist) {
+                    bestDist = rayDist;
+                    bestDir = Vector(direction.X, direction.Y, direction.Z);
+                }
+            }
+            direction = bestDir;
+
             SetFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), EyePosition(ClosestPlayerTo(EventPlayer(), Team.Team1))), Relative.ToWorld);
-            StartThrottleInDirection(EventPlayer(), direction, 100, Relative.ToPlayer, ThrottleBehavior.AddToExistingThrottle);
+            StartThrottleInDirection(EventPlayer(), direction, 100, Relative.ToWorld, ThrottleBehavior.AddToExistingThrottle);
             if (!IsButtonHeld(EventPlayer(), Button.PrimaryFire)) {
                 StartHoldingButton(EventPlayer(), Button.PrimaryFire);
             }
@@ -260,10 +277,26 @@ Event.OngoingPlayer {
 
         //Pharah logic
         if (IsDummyBot(EventPlayer()) && EventPlayer().Hero() == Hero.Pharah && IsGameInProgress()) {
-            define direction = Vector(RandomReal(-100, 100), 0, RandomReal(-100, 100)).Normalize();
+            define direction = DirectionTowards(EyePosition(AllLivingPlayers(Team.Team1)[0]), EyePosition(EventPlayer()));
+            direction = Vector(direction.X, EyePosition(EventPlayer()).Y, direction.Z);
+            define bestDir = direction;
+            define rayHit = RayCastHitPosition(EyePosition(EventPlayer()), EyePosition(EventPlayer()) + direction*5.5, AllPlayers());
+            define rayDist = rayHit.DistanceTo(EventPlayer());
+            define bestDist = rayDist;
+
+            for (define i=0; i<7; i++) {
+                direction = Vector(RandomReal(-100, 100), 0, RandomReal(-100, 100)).Normalize();
+                rayHit = RayCastHitPosition(EyePosition(EventPlayer()), EyePosition(EventPlayer()) + direction*5.5, AllPlayers());
+                rayDist = rayHit.DistanceTo(EventPlayer());
+                if (rayDist > bestDist) {
+                    bestDist = rayDist;
+                    bestDir = Vector(direction.X, direction.Y, direction.Z);
+                }
+            }
+            direction = bestDir;
             
             SetFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), EyePosition(ClosestPlayerTo(EventPlayer(), Team.Team1))), Relative.ToWorld);
-            StartThrottleInDirection(EventPlayer(), direction, 100, Relative.ToPlayer, ThrottleBehavior.AddToExistingThrottle);
+            StartThrottleInDirection(EventPlayer(), direction, 100, Relative.ToWorld, ThrottleBehavior.AddToExistingThrottle);
 
             if (!IsButtonHeld(EventPlayer(), Button.PrimaryFire)) {
                 StartHoldingButton(EventPlayer(), Button.PrimaryFire);
