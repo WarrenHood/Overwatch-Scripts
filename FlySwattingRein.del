@@ -1,10 +1,11 @@
-globalvar define currentTime;
-globalvar define fliesEliminated;
-globalvar define roachesEliminated;
+globalvar define fliesEliminated = 0;
+globalvar define roachesEliminated = 0;
+globalvar define rein_inaccuracy_interval = 3.0;
 globalvar define useRein = true;
 globalvar define roachCount = 5;
 globalvar define flyCount = 6;
-
+globalvar define currentTime;
+globalvar define matchEnded = false;
 
 rule: "Spawn_Bot"
 Event.OngoingGlobal {
@@ -14,12 +15,16 @@ Event.OngoingGlobal {
     for (;;) {
         if (useRein) {
             if (CountOf(AllPlayers(Team.Team1)) == 0) {
-                reinbot = CreateDummyBot(Hero.Reinhardt, Team.Team1, 0);
+                reinbot = CreateDummyBot(Hero.Reinhardt, Team.Team1, 1);
                 StartForcingDummyBotName(reinbot, "ReinBot");
+            }
+            else if (PlayersInSlot(0, Team.Team1) != null && HasSpawned(PlayersInSlot(0, Team.Team1)) && PlayersInSlot(1, Team.Team1) != null && reinbot != null) {
+                DestroyDummyBot(Team.Team1, 1);
+                reinbot = null;
             }
         }
 
-        if (!IsAssemblingHeroes()) {
+        if (!IsAssemblingHeroes() && !matchEnded) {
             //DestroyHudText(debugHud1);
             //debugHud1 = CreateHudText(AllPlayers(), "Slots on team 2", NumberOfSlots(Team.Team2), null, Location.Left);
 
@@ -122,8 +127,8 @@ Event.OngoingGlobal {
     define hudText2 = CreateHudText(AllPlayers(Team.Team2), "Try to survive!", "Time Remaining", currentTime, Location.Top, -1, Color.Blue, Color.Red, Color.White);
     define hudText3 = CreateHudText(AllPlayers(), "Fly Swatting Simulator", null, null, Location.Right, -1, Color.Red, Color.Red, Color.Red);
     define lastRein = null;
-    define matchEnded = false;
     define swapSides = true;
+    matchEnded = false;
 
     DisableCompletion();
     DisableScoring();
@@ -131,14 +136,14 @@ Event.OngoingGlobal {
     for (;;) {
         DisableCompletion();
         DisableScoring();
-        if (matchEnded) {
+        if (matchEnded && IsGameInProgress()) {
             roachesEliminated = 0;
             fliesEliminated = 0;
             if (swapSides) {
                  BigMessage(AllPlayers(), "Swapping sides");
 
                 // Move rein or brig to first free slot
-                if (!IsDummyBot(AllPlayers(Team.Team1)[0])) {
+                if (PlayersInSlot(0, Team.Team1) != null) {
                     for(define i=0; i < NumberOfSlots(Team.Team2); i++) {
                         define currentPlayer = PlayersInSlot(i, Team.Team2);
                         if (currentPlayer == null || IsDummyBot(currentPlayer)) {
@@ -160,7 +165,8 @@ Event.OngoingGlobal {
                 }
                 
             }
-           
+
+            DestroyAllDummyBots();
             matchEnded = false;
             RestartMatch();
         }
@@ -220,7 +226,6 @@ Event.OngoingGlobal {
 
 rule: "Bot_Actions" 
 Event.OngoingPlayer {
-    define rein_inaccuracy_range = 1.5;
     for (;;) {
         if (TeamOf(EventPlayer()) == Team.Team1 && !IsGameInProgress() && !IsWaitingForPlayers()) {
             DisallowButton(EventPlayer(), Button.Ability1);
@@ -239,9 +244,11 @@ Event.OngoingPlayer {
         //Roach logic
         if (IsDummyBot(EventPlayer()) && EventPlayer().Hero() == Hero.Tracer && IsGameInProgress()) {
             define direction = Vector(RandomReal(-100, 100), 0, RandomReal(-100, 100)).Normalize();
-            SetFacing(EventPlayer(), ClosestPlayerTo(EventPlayer(), Team.Team1), Relative.ToWorld);
+            SetFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), EyePosition(ClosestPlayerTo(EventPlayer(), Team.Team1))), Relative.ToWorld);
             StartThrottleInDirection(EventPlayer(), direction, 100, Relative.ToPlayer, ThrottleBehavior.AddToExistingThrottle);
-
+            if (!IsButtonHeld(EventPlayer(), Button.PrimaryFire)) {
+                StartHoldingButton(EventPlayer(), Button.PrimaryFire);
+            }
             if (RandomReal(0,1) < 0.75) {
                 PressButton(EventPlayer(), Button.Ability1);
             }
@@ -254,9 +261,13 @@ Event.OngoingPlayer {
         //Pharah logic
         if (IsDummyBot(EventPlayer()) && EventPlayer().Hero() == Hero.Pharah && IsGameInProgress()) {
             define direction = Vector(RandomReal(-100, 100), 0, RandomReal(-100, 100)).Normalize();
-            SetFacing(EventPlayer(), ClosestPlayerTo(EventPlayer(), Team.Team1), Relative.ToWorld);
+            
+            SetFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), EyePosition(ClosestPlayerTo(EventPlayer(), Team.Team1))), Relative.ToWorld);
             StartThrottleInDirection(EventPlayer(), direction, 100, Relative.ToPlayer, ThrottleBehavior.AddToExistingThrottle);
 
+            if (!IsButtonHeld(EventPlayer(), Button.PrimaryFire)) {
+                StartHoldingButton(EventPlayer(), Button.PrimaryFire);
+            }
             if (RandomReal(0,1) < 0.75) {
                 PressButton(EventPlayer(), Button.Ability1);
             }
@@ -275,7 +286,7 @@ Event.OngoingPlayer {
                 define closestPlayer = FirstOf(SortedArray(FilteredArray(AllLivingPlayers(Team.Team2), HasSpawned(ArrayElement())), DistanceBetween(EventPlayer(), ArrayElement())));
                 define timeToPlayer = DistanceBetween(EyePosition(EventPlayer()), EyePosition(closestPlayer))/ (26.66*5); // 500% projectile speed
                 define nextPlayerPos = EyePosition(closestPlayer) +  VelocityOf(closestPlayer)*timeToPlayer;
-                nextPlayerPos += Vector(RandomReal(-rein_inaccuracy_range, rein_inaccuracy_range), RandomReal(-rein_inaccuracy_range, rein_inaccuracy_range), RandomReal(-rein_inaccuracy_range, rein_inaccuracy_range));
+                nextPlayerPos += Vector(RandomReal(-rein_inaccuracy_interval, rein_inaccuracy_interval), RandomReal(-rein_inaccuracy_interval, rein_inaccuracy_interval), RandomReal(-rein_inaccuracy_interval, rein_inaccuracy_interval));
                 //nextPlayerPos = Vector(nextPlayerPos.X, EyePosition(closestPlayer).Y, nextPlayerPos.Z);
                     
                 //SetFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), EyePosition(closestPlayer)), Relative.ToWorld);
@@ -286,15 +297,15 @@ Event.OngoingPlayer {
                 }
                     
                 PressButton(EventPlayer(), Button.Ability1);
-                define distToPlayer = DistanceBetween(EventPlayer(), closestPlayer);
-                if (distToPlayer > 2 ) {
+                define playerDist = DistanceBetween(EventPlayer(), closestPlayer);
+                if (playerDist > 2 ) {
                     //StartThrottleInDirection(EventPlayer(), DirectionTowards(EventPlayer(), closestPlayer), 100, Relative.ToWorld, ThrottleBehavior.AddToExistingThrottle);
                     StartThrottleInDirection(EventPlayer(), DirectionTowards(EventPlayer(), nextPlayerPos), 100, Relative.ToWorld, ThrottleBehavior.AddToExistingThrottle);
                 }
                 else {
                     StopThrottleInDirection(EventPlayer());
                 }            
-                if (distToPlayer <= 5) {
+                if (playerDist <= 5) {
                     PressButton(EventPlayer(), Button.PrimaryFire);
                 }
                 else {
@@ -338,4 +349,18 @@ Event.OnDeath {
         //CreateEffect(AllPlayers(), Effect.DecalSound, Color.Red, EventPlayer(), 10);
         PlayEffect(AllPlayers(), PlayEffect.BadExplosion, Color.Red, EventPlayer(), 20.0);
     }
+}
+
+rule: "Roof" 
+Event.OngoingPlayer {
+    //define roofHud = CreateHudText(EventPlayer(), "Height", PositionOf(EventPlayer()).Y);
+    for(;;) {
+        //DestroyHudText(roofHud);
+        //roofHud = CreateHudText(EventPlayer(), "Height", PositionOf(EventPlayer()).Y);
+        if (PositionOf(EventPlayer()).Y > 23.0) {
+            EventPlayer().Teleport(Vector(PositionOf(EventPlayer()).X, 23.0, PositionOf(EventPlayer()).Z));
+        }
+        Wait(0.25);
+    }
+
 }
