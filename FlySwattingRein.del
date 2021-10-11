@@ -63,23 +63,27 @@ Event.OngoingGlobal {
     for (;;) {
         DisableCompletion();
         DisableScoring();
-        if (matchEnded && (!swapSides || (CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0 && lastRein == AllPlayers(Team.Team1)[0]))) {
+        if (matchEnded && (!swapSides || lastRein == AllPlayers(Team.Team1)[0])) {
             if (swapSides) {
                  BigMessage(AllPlayers(), "Swapping sides");
 
                 // Move rein or brig to first free slot
-                for(define i=0; i < NumberOfSlots(Team.Team2); i++) {
-                    define currentPlayer = PlayersInSlot(i, Team.Team2);
-                    if (currentPlayer == null) {
-                        MovePlayerToTeam(PlayersInSlot(0, Team.Team1), Team.Team2, i);
-                        break;
+                if (!IsDummyBot(AllPlayers(Team.Team1)[0])) {
+                    for(define i=0; i < NumberOfSlots(Team.Team2); i++) {
+                        define currentPlayer = PlayersInSlot(i, Team.Team2);
+                        if (currentPlayer == null) {
+                            MovePlayerToTeam(PlayersInSlot(0, Team.Team1), Team.Team2, i);
+                            break;
+                        }
                     }
                 }
 
                 // Move someone to the rein/brig team
                 define nextRein = RandomValueInArray(AllPlayers(Team.Team2));
-                while (nextRein == lastRein || nextRein == null && CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0) {
-                    nextRein = RandomValueInArray(AllPlayers(Team.Team2));
+                define attemptsRemaining = 5;
+                while ((nextRein == lastRein || nextRein == null || IsDummyBot(nextRein)) && attemptsRemaining >= 0) {
+                    nextRein = RandomValueInArray(FilteredArray(AllPlayers(Team.Team2), !IsDummyBot(ArrayElement())));
+                    attemptsRemaining--;
                 }
                 MovePlayerToTeam(nextRein, Team.Team1, 0);
             }
@@ -88,8 +92,7 @@ Event.OngoingGlobal {
             RestartMatch();
         }
         
-        
-        if (matchEnded && (!swapSides || (CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0 && lastRein != PlayersInSlot(0, Team.Team1)))) {
+        if (matchEnded && (!swapSides ||  lastRein != PlayersInSlot(0, Team.Team1) || lastRein == null)) {
             // If the rein/brig from last time is different, we can restart
             matchEnded = false;
             RestartMatch();
