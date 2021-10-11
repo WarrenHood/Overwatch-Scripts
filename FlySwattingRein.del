@@ -55,7 +55,7 @@ Event.OngoingGlobal {
     define hudText3 = CreateHudText(AllPlayers(), "Fly Swatting Simulator", null, null, Location.Right, -1, Color.Red, Color.Red, Color.Red);
     define lastRein = null;
     define matchEnded = false;
-    define swapSides = false;
+    define swapSides = true;
 
     DisableCompletion();
     DisableScoring();
@@ -66,9 +66,8 @@ Event.OngoingGlobal {
         if (matchEnded && (!swapSides || (CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0 && lastRein == AllPlayers(Team.Team1)[0]))) {
             if (swapSides) {
                  BigMessage(AllPlayers(), "Swapping sides");
-                MovePlayerToTeam(AllPlayers(Team.Team1)[0], Team.Team2, CountOf(AllPlayers(Team.Team2)));
 
-                // Move rein/brig to first free slot
+                // Move rein or brig to first free slot
                 for(define i=0; i < NumberOfSlots(Team.Team2); i++) {
                     define currentPlayer = PlayersInSlot(i, Team.Team2);
                     if (currentPlayer == null) {
@@ -77,6 +76,7 @@ Event.OngoingGlobal {
                     }
                 }
 
+                // Move someone to the rein/brig team
                 define nextRein = RandomValueInArray(AllPlayers(Team.Team2));
                 while (nextRein == lastRein || nextRein == null && CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0) {
                     nextRein = RandomValueInArray(AllPlayers(Team.Team2));
@@ -185,6 +185,7 @@ Event.OngoingGlobal {
 
 rule: "Bot_Actions" 
 Event.OngoingPlayer {
+    define rein_inaccuracy_range = 1.5;
     for (;;) {
         if (TeamOf(EventPlayer()) == Team.Team1 && !IsGameInProgress() && !IsWaitingForPlayers()) {
             DisallowButton(EventPlayer(), Button.Ability1);
@@ -239,6 +240,7 @@ Event.OngoingPlayer {
                 define closestPlayer = FirstOf(SortedArray(FilteredArray(AllLivingPlayers(Team.Team2), HasSpawned(ArrayElement())), DistanceBetween(EventPlayer(), ArrayElement())));
                 define timeToPlayer = DistanceBetween(EyePosition(EventPlayer()), EyePosition(closestPlayer))/ (26.66*5); // 500% projectile speed
                 define nextPlayerPos = EyePosition(closestPlayer) +  VelocityOf(closestPlayer)*timeToPlayer;
+                nextPlayerPos += Vector(RandomReal(-rein_inaccuracy_range, rein_inaccuracy_range), RandomReal(-rein_inaccuracy_range, rein_inaccuracy_range), RandomReal(-rein_inaccuracy_range, rein_inaccuracy_range));
                 //nextPlayerPos = Vector(nextPlayerPos.X, EyePosition(closestPlayer).Y, nextPlayerPos.Z);
                     
                 //SetFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), EyePosition(closestPlayer)), Relative.ToWorld);
@@ -291,7 +293,7 @@ Event.OngoingPlayer {
     }
 }
 
-rule: 'Squishy noise'
+rule: "Red explosion on death"
 Event.OnDeath {
     if (EventPlayer().Team() == Team.Team2) {
         //CreateEffect(AllPlayers(), Effect.DecalSound, Color.Red, EventPlayer(), 10);
