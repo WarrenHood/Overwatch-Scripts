@@ -63,7 +63,7 @@ Event.OngoingGlobal {
     for (;;) {
         DisableCompletion();
         DisableScoring();
-        if (matchEnded && (!swapSides || lastRein == AllPlayers(Team.Team1)[0])) {
+        if (matchEnded) {
             if (swapSides) {
                  BigMessage(AllPlayers(), "Swapping sides");
 
@@ -71,7 +71,7 @@ Event.OngoingGlobal {
                 if (!IsDummyBot(AllPlayers(Team.Team1)[0])) {
                     for(define i=0; i < NumberOfSlots(Team.Team2); i++) {
                         define currentPlayer = PlayersInSlot(i, Team.Team2);
-                        if (currentPlayer == null) {
+                        if (currentPlayer == null || IsDummyBot(currentPlayer)) {
                             MovePlayerToTeam(PlayersInSlot(0, Team.Team1), Team.Team2, i);
                             break;
                         }
@@ -85,20 +85,24 @@ Event.OngoingGlobal {
                     nextRein = RandomValueInArray(FilteredArray(AllPlayers(Team.Team2), !IsDummyBot(ArrayElement())));
                     attemptsRemaining--;
                 }
-                MovePlayerToTeam(nextRein, Team.Team1, 0);
+                if (nextRein != lastRein) {
+                    MovePlayerToTeam(nextRein, Team.Team1, 0);
+                }
+                
             }
            
             matchEnded = false;
             RestartMatch();
         }
         
+        /*
         if (matchEnded && (!swapSides ||  lastRein != PlayersInSlot(0, Team.Team1) || lastRein == null)) {
             // If the rein/brig from last time is different, we can restart
             matchEnded = false;
             RestartMatch();
-        }
+        }*/
 
-        if (!matchEnded && CountOf(FilteredArray(AllLivingPlayers(Team.Team2), HasSpawned(ArrayElement()))) == 0 && CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0) {
+        if (!matchEnded && IsGameInProgress() && CountOf(FilteredArray(AllLivingPlayers(Team.Team2), HasSpawned(ArrayElement()))) == 0 && CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0) {
             // Reinhardt/Brig wins
             lastRein = AllPlayers(Team.Team1)[0];
             matchEnded = true;
@@ -132,9 +136,7 @@ Event.OngoingGlobal {
                 BigMessage(AllPlayers(Team.Team1), "You failed to squish the bugs in time!");
                 BigMessage(AllPlayers(Team.Team2), "You win!");
                 
-                if (!matchEnded && CountOf(AllPlayers(Team.Team1)) > 0 && CountOf(AllPlayers(Team.Team2)) > 0) {
-                    lastRein = AllPlayers(Team.Team1)[0];
-                }
+                lastRein = AllPlayers(Team.Team1)[0];
                 matchEnded = true;
             }
             currentTime--;
@@ -165,7 +167,7 @@ Event.OngoingGlobal {
             for (define i=0; i < roachCount; i++) {
                 for(define iSlot=0; iSlot<NumberOfSlots(Team.Team2); iSlot++) {
                     if (PlayersInSlot(iSlot, Team.Team2) == null) {
-                        CreateDummyBot(Hero.Tracer, Team.Team2, iSlot);
+                        StartForcingDummyBotName(CreateDummyBot(Hero.Tracer, Team.Team2, iSlot), "Roach");
                         break;
                     }
                 }
@@ -176,7 +178,7 @@ Event.OngoingGlobal {
             for (define i=0; i < roachCount; i++) {
                 for(define iSlot=0; iSlot<NumberOfSlots(Team.Team2); iSlot++) {
                     if (PlayersInSlot(iSlot, Team.Team2) == null) {
-                        CreateDummyBot(Hero.Pharah, Team.Team2, iSlot);
+                        StartForcingDummyBotName(CreateDummyBot(Hero.Pharah, Team.Team2, iSlot), "Fly");
                         break;
                     }
                 }
