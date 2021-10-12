@@ -1,6 +1,7 @@
 globalvar define fliesEliminated = 0;
 globalvar define roachesEliminated = 0;
 globalvar define rein_inaccuracy_interval = 3.0;
+globalvar define rein_aim_speed;
 globalvar define useRein = true;
 globalvar define roachCount = 5;
 globalvar define flyCount = 5;
@@ -19,7 +20,9 @@ Event.OngoingGlobal {
     // define debugHud1 = CreateHudText(AllPlayers(), "Slots on team 2", NumberOfSlots(Team.Team2), null, Location.Left);
     flyCount = WorkshopSettingInteger("Bug Spawn Count", "Flies", 5, 0, 10);
     roachCount = WorkshopSettingInteger("Bug Spawn Count", "Roaches", 5, 0, 10);
-    rein_inaccuracy_interval = WorkshopSettingReal("ReinBot Settings", "Stupidity", 3.0, 0, 10);
+    rein_inaccuracy_interval = WorkshopSettingReal("ReinBot Settings", "Stupidity", 1.0, 0, 10);
+    rein_aim_speed = WorkshopSettingReal("ReinBot Settings", "Aim Speed (degrees per second)", 270, 60, 720);
+
     bugWallAvoidanceMultiplier = WorkshopSettingReal("BugBot Settings", "Wall Avoidance Coefficient", 1.0, -20, 20);
     bugSquisherAvoidanceMultiplier = WorkshopSettingReal("BugBot Settings", "Squisher Avoidance Coefficient", 1.0, -20, 20);
     bugGroupingAvoidanceMultiplier = WorkshopSettingReal("BugBot Settings", "Grouping Avoidance Coefficient (> means less grouping)", 1.0, -20, 20);
@@ -356,7 +359,8 @@ Event.OngoingPlayer {
                 //nextPlayerPos = Vector(nextPlayerPos.X, EyePosition(closestPlayer).Y, nextPlayerPos.Z);
                     
                 //SetFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), EyePosition(closestPlayer)), Relative.ToWorld);
-                SetFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), nextPlayerPos), Relative.ToWorld); // Aim prediction?
+                // SetFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), nextPlayerPos), Relative.ToWorld); // Aim prediction?
+                StartFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), nextPlayerPos), rein_aim_speed, Relative.ToWorld, FacingRev.DirectionAndTurnRate);
 
                 if (AbsoluteValue(PositionOf(EventPlayer()).Y - PositionOf(closestPlayer).Y) <= 4.5) {
                     PressButton(EventPlayer(), Button.Ability1);
