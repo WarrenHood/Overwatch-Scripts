@@ -7,11 +7,25 @@ globalvar define flyCount = 5;
 globalvar define currentTime;
 globalvar define matchEnded = false;
 
+globalvar define bugWallAvoidanceMultiplier;
+globalvar define bugSquisherAvoidanceMultiplier;
+globalvar define bugRaycastDistance;
 
-rule: "Spawn_Bot"
+
+rule: "Spawn Bot and Init Settings"
 Event.OngoingGlobal {
     define reinbot = null;
     // define debugHud1 = CreateHudText(AllPlayers(), "Slots on team 2", NumberOfSlots(Team.Team2), null, Location.Left);
+    flyCount = WorkshopSettingInteger("Bug Spawn Count", "Flies", 5, 0, 10);
+    roachCount = WorkshopSettingInteger("Bug Spawn Count", "Roaches", 5, 0, 10);
+    rein_inaccuracy_interval = WorkshopSettingReal("ReinBot Settings", "Stupidity", 3.0, 0, 10);
+    bugWallAvoidanceMultiplier = WorkshopSettingReal("BugBot Settings", "Wall Avoidance Coefficient", 1.0, -20, 20);
+    bugSquisherAvoidanceMultiplier = WorkshopSettingReal("BugBot Settings", "Squisher Avoidance Coefficient", 1.0, -20, 20);
+    bugRaycastDistance = WorkshopSettingReal("BugBot Settings", "Bug Raycast Distance", 20.0, 0, 20);
+
+    if (flyCount + roachCount > 11) {
+        flyCount = 11-flyCount;
+    }
 
     for (;;) {
         if (useRein) {
@@ -247,16 +261,16 @@ Event.OngoingPlayer {
             define direction = Vector(RandomReal(-360, 360), 0, RandomReal(-360, 360)).Normalize();
             direction = Vector(direction.X, EyePosition(EventPlayer()).Y, direction.Z);
             define bestDir = direction;
-            define rayHit = RayCastHitPosition(EyePosition(EventPlayer()), EyePosition(EventPlayer()) + direction*5.5, AllPlayers());
-            define rayDist = 2*rayHit.DistanceTo(EventPlayer()) + rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
+            define rayHit = RayCastHitPosition(EyePosition(EventPlayer()), EyePosition(EventPlayer()) + direction*bugRaycastDistance, AllPlayers());
+            define rayDist = bugWallAvoidanceMultiplier*rayHit.DistanceTo(EventPlayer()) + bugSquisherAvoidanceMultiplier*rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
             //define rayDist = rayHit.DistanceTo(EventPlayer());
             //define rayDist = rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
             define bestDist = rayDist;
 
             for (define i=0; i<10; i++) {
                 direction = Vector(RandomReal(-360, 360), 0, RandomReal(-360, 360)).Normalize();
-                rayHit = RayCastHitPosition(EyePosition(EventPlayer()), EyePosition(EventPlayer()) + direction*5.5, AllPlayers());
-                rayDist = 2*rayHit.DistanceTo(EventPlayer()) + rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
+                rayHit = RayCastHitPosition(EyePosition(EventPlayer()), EyePosition(EventPlayer()) + direction*bugRaycastDistance, AllPlayers());
+                rayDist = bugWallAvoidanceMultiplier*rayHit.DistanceTo(EventPlayer()) + bugSquisherAvoidanceMultiplier*rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
                 //rayDist = rayHit.DistanceTo(EventPlayer());
                 //rayDist = rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
                 if (rayDist > bestDist) {
@@ -285,16 +299,16 @@ Event.OngoingPlayer {
             define direction = Vector(RandomReal(-360, 360), 0, RandomReal(-360, 360)).Normalize();
             direction = Vector(direction.X, EyePosition(EventPlayer()).Y, direction.Z);
             define bestDir = direction;
-            define rayHit = RayCastHitPosition(EyePosition(EventPlayer()), EyePosition(EventPlayer()) + direction*5.5, AllPlayers());
-            define rayDist = 2*rayHit.DistanceTo(EventPlayer()) + rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
+            define rayHit = RayCastHitPosition(EyePosition(EventPlayer()), EyePosition(EventPlayer()) + direction*bugRaycastDistance, AllPlayers());
+            define rayDist = bugWallAvoidanceMultiplier*rayHit.DistanceTo(EventPlayer()) + bugSquisherAvoidanceMultiplier*rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
             //define rayDist = rayHit.DistanceTo(EventPlayer());
             //define rayDist = rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
             define bestDist = rayDist;
 
             for (define i=0; i<10; i++) {
                 direction = Vector(RandomReal(-360, 360), 0, RandomReal(-360, 360)).Normalize();
-                rayHit = RayCastHitPosition(EyePosition(EventPlayer()), EyePosition(EventPlayer()) + direction*5.5, AllPlayers());
-                rayDist = 2*rayHit.DistanceTo(EventPlayer()) + rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
+                rayHit = RayCastHitPosition(EyePosition(EventPlayer()), EyePosition(EventPlayer()) + direction*bugRaycastDistance, AllPlayers());
+                rayDist = bugWallAvoidanceMultiplier*rayHit.DistanceTo(EventPlayer()) + bugSquisherAvoidanceMultiplier*rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
                 //rayDist = rayHit.DistanceTo(EventPlayer());
                 //rayDist = rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
                 if (rayDist > bestDist) {
