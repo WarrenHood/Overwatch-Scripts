@@ -3,9 +3,10 @@ globalvar define roachesEliminated = 0;
 globalvar define rein_inaccuracy_interval = 3.0;
 globalvar define useRein = true;
 globalvar define roachCount = 5;
-globalvar define flyCount = 6;
+globalvar define flyCount = 5;
 globalvar define currentTime;
 globalvar define matchEnded = false;
+
 
 rule: "Spawn_Bot"
 Event.OngoingGlobal {
@@ -243,19 +244,19 @@ Event.OngoingPlayer {
         
         //Roach logic
         if (IsDummyBot(EventPlayer()) && EventPlayer().Hero() == Hero.Tracer && IsGameInProgress()) {
-            define direction = Vector(RandomReal(-100, 100), 0, RandomReal(-100, 100)).Normalize();
+            define direction = Vector(RandomReal(-360, 360), 0, RandomReal(-360, 360)).Normalize();
             direction = Vector(direction.X, EyePosition(EventPlayer()).Y, direction.Z);
             define bestDir = direction;
             define rayHit = RayCastHitPosition(EyePosition(EventPlayer()), EyePosition(EventPlayer()) + direction*5.5, AllPlayers());
-            define rayDist = 10*rayHit.DistanceTo(EventPlayer()) + rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
+            define rayDist = 2*rayHit.DistanceTo(EventPlayer()) + rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
             //define rayDist = rayHit.DistanceTo(EventPlayer());
             //define rayDist = rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
             define bestDist = rayDist;
 
-            for (define i=0; i<7; i++) {
-                direction = Vector(RandomReal(-100, 100), 0, RandomReal(-100, 100)).Normalize();
+            for (define i=0; i<10; i++) {
+                direction = Vector(RandomReal(-360, 360), 0, RandomReal(-360, 360)).Normalize();
                 rayHit = RayCastHitPosition(EyePosition(EventPlayer()), EyePosition(EventPlayer()) + direction*5.5, AllPlayers());
-                rayDist = 10*rayHit.DistanceTo(EventPlayer()) + rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
+                rayDist = 2*rayHit.DistanceTo(EventPlayer()) + rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
                 //rayDist = rayHit.DistanceTo(EventPlayer());
                 //rayDist = rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
                 if (rayDist > bestDist) {
@@ -266,7 +267,7 @@ Event.OngoingPlayer {
             direction = bestDir;
 
             SetFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), EyePosition(ClosestPlayerTo(EventPlayer(), Team.Team1))), Relative.ToWorld);
-            StartThrottleInDirection(EventPlayer(), direction, 100, Relative.ToWorld, ThrottleBehavior.AddToExistingThrottle);
+            StartThrottleInDirection(EventPlayer(), direction, 1000, Relative.ToWorld, ThrottleBehavior.ReplaceExistingThrottle);
             if (!IsButtonHeld(EventPlayer(), Button.PrimaryFire)) {
                 StartHoldingButton(EventPlayer(), Button.PrimaryFire);
             }
@@ -281,19 +282,19 @@ Event.OngoingPlayer {
 
         //Pharah logic
         if (IsDummyBot(EventPlayer()) && EventPlayer().Hero() == Hero.Pharah && IsGameInProgress()) {
-            define direction = Vector(RandomReal(-100, 100), 0, RandomReal(-100, 100)).Normalize();
+            define direction = Vector(RandomReal(-360, 360), 0, RandomReal(-360, 360)).Normalize();
             direction = Vector(direction.X, EyePosition(EventPlayer()).Y, direction.Z);
             define bestDir = direction;
             define rayHit = RayCastHitPosition(EyePosition(EventPlayer()), EyePosition(EventPlayer()) + direction*5.5, AllPlayers());
-            define rayDist = 10*rayHit.DistanceTo(EventPlayer()) + rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
+            define rayDist = 2*rayHit.DistanceTo(EventPlayer()) + rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
             //define rayDist = rayHit.DistanceTo(EventPlayer());
             //define rayDist = rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
             define bestDist = rayDist;
 
-            for (define i=0; i<7; i++) {
-                direction = Vector(RandomReal(-100, 100), 0, RandomReal(-100, 100)).Normalize();
+            for (define i=0; i<10; i++) {
+                direction = Vector(RandomReal(-360, 360), 0, RandomReal(-360, 360)).Normalize();
                 rayHit = RayCastHitPosition(EyePosition(EventPlayer()), EyePosition(EventPlayer()) + direction*5.5, AllPlayers());
-                rayDist = 10*rayHit.DistanceTo(EventPlayer()) + rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
+                rayDist = 2*rayHit.DistanceTo(EventPlayer()) + rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
                 //rayDist = rayHit.DistanceTo(EventPlayer());
                 //rayDist = rayHit.DistanceTo(AllLivingPlayers(Team.Team1)[0]);
                 if (rayDist > bestDist) {
@@ -304,7 +305,7 @@ Event.OngoingPlayer {
             direction = bestDir;
             
             SetFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), EyePosition(ClosestPlayerTo(EventPlayer(), Team.Team1))), Relative.ToWorld);
-            StartThrottleInDirection(EventPlayer(), direction, 100, Relative.ToWorld, ThrottleBehavior.AddToExistingThrottle);
+            StartThrottleInDirection(EventPlayer(), direction, 1000, Relative.ToWorld, ThrottleBehavior.ReplaceExistingThrottle);
 
             if (!IsButtonHeld(EventPlayer(), Button.PrimaryFire)) {
                 StartHoldingButton(EventPlayer(), Button.PrimaryFire);
