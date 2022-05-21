@@ -15,6 +15,8 @@ globalvar define bugSquisherAvoidanceMultiplier;
 globalvar define bugGroupingAvoidanceMultiplier;
 globalvar define bugRaycastDistance;
 
+globalvar define botHero;
+
 
 rule: "Spawn Bot and Init Settings"
 Event.OngoingGlobal {
@@ -22,9 +24,10 @@ Event.OngoingGlobal {
     // define debugHud1 = CreateHudText(AllPlayers(), "Slots on team 2", NumberOfSlots(Team.Team2), null, Location.Left);
     flyCount = WorkshopSettingInteger("Bug Spawn Count", "Flies", 5, 0, 10);
     roachCount = WorkshopSettingInteger("Bug Spawn Count", "Roaches", 5, 0, 10);
-    rein_inaccuracy_interval = WorkshopSettingReal("ReinBot Settings", "Stupidity", 1.0, 0, 10);
-    rein_aim_speed = WorkshopSettingReal("ReinBot Settings", "Aim Speed (degrees per second)", 270, 60, 720);
-    rein_human_aim = WorkshopSettingToggle("ReinBot Settings", "Simulate Human Aim", true);
+    botHero = WorkshopSettingCombo("Bot Settings", "Bot", 0, ["ReinBot", "BrigBot"], 0);
+    rein_inaccuracy_interval = WorkshopSettingReal("Bot Settings", "Stupidity", 1.0, 0, 10);
+    rein_aim_speed = WorkshopSettingReal("Bot Settings", "Aim Speed (degrees per second)", 270, 60, 720);
+    rein_human_aim = WorkshopSettingToggle("Bot Settings", "Simulate Human Aim", true);
 
     bugWallAvoidanceMultiplier = WorkshopSettingReal("BugBot Settings", "Wall Avoidance Coefficient", 1.0, -20, 20);
     bugSquisherAvoidanceMultiplier = WorkshopSettingReal("BugBot Settings", "Squisher Avoidance Coefficient", 1.0, -20, 20);
@@ -38,8 +41,18 @@ Event.OngoingGlobal {
     for (;;) {
         if (useRein) {
             if (CountOf(AllPlayers(Team.Team1)) == 0) {
-                reinbot = CreateDummyBot(Hero.Reinhardt, Team.Team1, 1);
-                StartForcingDummyBotName(reinbot, "ReinBot");
+                if (botHero == 0) {
+                    // Use rein
+                    reinbot = CreateDummyBot(Hero.Reinhardt, Team.Team1, 1);
+                    StartForcingDummyBotName(reinbot, "ReinBot");
+                }
+                else if (botHero == 1) {
+                    // Use brig
+                    reinbot = CreateDummyBot(Hero.Brigitte, Team.Team1, 1);
+                    StartForcingDummyBotName(reinbot, "BrigBot");
+                }
+                
+                
             }
             else if (PlayersInSlot(0, Team.Team1) != null && HasSpawned(PlayersInSlot(0, Team.Team1)) && PlayersInSlot(1, Team.Team1) != null && reinbot != null) {
                 DestroyDummyBot(Team.Team1, 1);
@@ -254,6 +267,9 @@ Event.OngoingGlobal {
 
 rule: "Bot_Actions" 
 Event.OngoingPlayer {
+    // Cooldowns
+    define brigShieldBashCurrentCD = 0;
+
     for (;;) {
         if (TeamOf(EventPlayer()) == Team.Team1 && !IsGameInProgress() && !IsWaitingForPlayers()) {
             DisallowButton(EventPlayer(), Button.Ability1);
@@ -399,6 +415,54 @@ Event.OngoingPlayer {
                 StopThrottleInDirection(EventPlayer());
             }
         }
+
+        // Brig logic
+        if (IsDummyBot(EventPlayer()) && EventPlayer().Hero() == Hero.Brigitte && IsGameInProgress()) {
+            if (CountOf(FilteredArray(AllLivingPlayers(Team.Team2), HasSpawned(ArrayElement()))) > 0) {
+                define closestPlayer = FirstOf(SortedArray(FilteredArray(AllLivingPlayers(Team.Team2), HasSpawned(ArrayElement())), DistanceBetween(EventPlayer(), ArrayElement())));
+                define timeToPlayer = DistanceBetween(EyePosition(EventPlayer()), EyePosition(closestPlayer))/ (26.66*5); // 500% projectile speed
+                define nextPlayerPos = EyePosition(closestPlayer) +  VelocityOf(closestPlayer)*timeToPlayer;
+                nextPlayerPos += Vector(RandomReal(-rein_inaccuracy_interval, rein_inaccuracy_interval), RandomReal(-rein_inaccuracy_interval, rein_inaccuracy_interval), RandomReal(-rein_inaccuracy_interval, rein_inaccuracy_interval));
+
+                if (rein_human_aim) {
+                    StartFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), nextPlayerPos), rein_aim_speed, Relative.ToWorld, FacingRev.DirectionAndTurnRate);
+                }
+                else {
+                    SetFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), nextPlayerPos), Relative.ToWorld); // Aim prediction?
+                }
+
+                // if (AbsoluteValue(PositionOf(EventPlayer()).Y - PositionOf(closestPlayer).Y) <= 4.5) {
+                //     // If the height difference is not too much, shield bash
+                //     AbilityCooldown(EventPlayer(), )
+                //     PressButton(EventPlayer(), Button.SecondaryFire);
+                //     PressButton(EventPlayer(), Button.PrimaryFire);
+                // }
+                
+
+                define playerDist = DistanceBetween(EventPlayer(), closestPlayer);
+                if (playerDist > 2 ) {
+                    //StartThrottleInDirection(EventPlayer(), DirectionTowards(EventPlayer(), closestPlayer), 100, Relative.ToWorld, ThrottleBehavior.AddToExistingThrottle);
+                    StartThrottleInDirection(EventPlayer(), DirectionTowards(EventPlayer(), nextPlayerPos), 100, Relative.ToWorld, ThrottleBehavior.AddToExistingThrottle);
+                    StopHoldingButton(EventPlayer(), Button.PrimaryFire);
+                }
+                else {
+                    StopThrottleInDirection(EventPlayer());
+                }            
+                if (playerDist <= 5) {
+                    StartHoldingButton(EventPlayer(), Button.PrimaryFire);
+                }
+                else {
+                    // Whip
+                    PressButton(EventPlayer(), Button.Ability1);
+                }
+            }
+            else {
+                StopThrottleInDirection(EventPlayer());
+                StopHoldingButton(EventPlayer(), Button.PrimaryFire);
+            }
+        }
+
+        brigShieldBashCurrentCD = Max(0, brigShieldBashCurrentCD - 0.1)
         Wait(0.1);
     }
 }
