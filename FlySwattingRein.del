@@ -2,6 +2,8 @@ globalvar define fliesEliminated = 0;
 globalvar define roachesEliminated = 0;
 globalvar define rein_inaccuracy_interval = 3.0;
 globalvar define rein_aim_speed;
+
+globalvar define rein_human_aim = true;
 globalvar define useRein = true;
 globalvar define roachCount = 5;
 globalvar define flyCount = 5;
@@ -22,6 +24,7 @@ Event.OngoingGlobal {
     roachCount = WorkshopSettingInteger("Bug Spawn Count", "Roaches", 5, 0, 10);
     rein_inaccuracy_interval = WorkshopSettingReal("ReinBot Settings", "Stupidity", 1.0, 0, 10);
     rein_aim_speed = WorkshopSettingReal("ReinBot Settings", "Aim Speed (degrees per second)", 270, 60, 720);
+    rein_human_aim = WorkshopSettingToggle("ReinBot Settings", "Simulate Human Aim", true);
 
     bugWallAvoidanceMultiplier = WorkshopSettingReal("BugBot Settings", "Wall Avoidance Coefficient", 1.0, -20, 20);
     bugSquisherAvoidanceMultiplier = WorkshopSettingReal("BugBot Settings", "Squisher Avoidance Coefficient", 1.0, -20, 20);
@@ -49,7 +52,7 @@ Event.OngoingGlobal {
             //debugHud1 = CreateHudText(AllPlayers(), "Slots on team 2", NumberOfSlots(Team.Team2), null, Location.Left);
 
             // Spawn roaches
-            for (define i=0; i < roachCount - roachesEliminated - CountOf(FilteredArray(AllLivingPlayers(Team.Team2), HeroOf(ArrayElement()) == Hero.Tracer)); i++) {
+            for (define i=0; i < roachCount - roachesEliminated - CountOf(FilteredArray(AllLivingPlayers(Team.Team2), HeroOf(ArrayElement()) == Hero.Tracer || HeroOf(ArrayElement()) == Hero.Lucio)); i++) {
                 for(define iSlot=NumberOfSlots(Team.Team2); iSlot<NumberOfSlots(Team.Team2)+12; iSlot++) {
                     if (PlayersInSlot(iSlot, Team.Team2) == null) {
                         StartForcingDummyBotName(CreateDummyBot(Hero.Tracer, Team.Team2, iSlot), "Roach");
@@ -77,8 +80,13 @@ Event.OngoingGlobal {
 rule: "ScalePlayers"
 Event.OngoingPlayer {
     for (;;) {
-        if (EventPlayer().Hero() == Hero.Reinhardt || EventPlayer().Hero() == Hero.Brigitte) {
+        if (EventPlayer().Hero() == Hero.Reinhardt) {
             StartScalingPlayer(EventPlayer(), 2.0);
+            //DisableMovementCollisionWithEnvironment(EventPlayer());
+            SetMoveSpeed(EventPlayer(), 150);
+        }
+        else if (EventPlayer().Hero() == Hero.Brigitte) {
+            StartScalingPlayer(EventPlayer(), 2.5);
             //DisableMovementCollisionWithEnvironment(EventPlayer());
             SetMoveSpeed(EventPlayer(), 150);
         }
@@ -126,7 +134,7 @@ rule: "Death points"
 Event.OnDeath {
     if (EventPlayer().Team() == Team.Team2) {
         if (EventPlayer().Hero() == Hero.Pharah) fliesEliminated++;
-        if (EventPlayer().Hero() == Hero.Tracer) roachesEliminated++;
+        if (EventPlayer().Hero() == Hero.Tracer || EventPlayer().Hero() == Hero.Lucio) roachesEliminated++;
         if (IsDummyBot(EventPlayer())) {
             BigMessage(AllPlayers(Team.Team1), "Squished bug (Bot) for an additional 10 seconds");
             currentTime += 10;
@@ -359,8 +367,13 @@ Event.OngoingPlayer {
                 //nextPlayerPos = Vector(nextPlayerPos.X, EyePosition(closestPlayer).Y, nextPlayerPos.Z);
                     
                 //SetFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), EyePosition(closestPlayer)), Relative.ToWorld);
-                // SetFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), nextPlayerPos), Relative.ToWorld); // Aim prediction?
-                StartFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), nextPlayerPos), rein_aim_speed, Relative.ToWorld, FacingRev.DirectionAndTurnRate);
+                
+                if (rein_human_aim) {
+                    StartFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), nextPlayerPos), rein_aim_speed, Relative.ToWorld, FacingRev.DirectionAndTurnRate);
+                }
+                else {
+                    SetFacing(EventPlayer(), DirectionTowards(EyePosition(EventPlayer()), nextPlayerPos), Relative.ToWorld); // Aim prediction?
+                }
 
                 if (AbsoluteValue(PositionOf(EventPlayer()).Y - PositionOf(closestPlayer).Y) <= 4.5) {
                     PressButton(EventPlayer(), Button.Ability1);
@@ -386,7 +399,7 @@ Event.OngoingPlayer {
                 StopThrottleInDirection(EventPlayer());
             }
         }
-        Wait(0.25);
+        Wait(0.1);
     }
 }
 
