@@ -438,6 +438,9 @@ Event.OngoingPlayer {
                 //     PressButton(EventPlayer(), Button.PrimaryFire);
                 // }
                 
+                if (brigShieldBashCurrentCD != 0) {
+                    StopHoldingButton(EventPlayer(), Button.SecondaryFire);
+                }
 
                 define playerDist = DistanceBetween(EventPlayer(), closestPlayer);
                 if (playerDist > 2 ) {
@@ -448,8 +451,16 @@ Event.OngoingPlayer {
                 else {
                     StopThrottleInDirection(EventPlayer());
                 }            
-                if (playerDist <= 5) {
-                    StartHoldingButton(EventPlayer(), Button.PrimaryFire);
+                if (playerDist <= 10) {
+                    if (AbsoluteValue(PositionOf(EventPlayer()).Y - PositionOf(closestPlayer).Y) <= 4.5 && brigShieldBashCurrentCD == 0) {
+                        brigShieldBashCurrentCD = 5;
+                        StopHoldingButton(EventPlayer(), Button.PrimaryFire);
+                        StartHoldingButton(EventPlayer(), Button.SecondaryFire);
+                        PressButton(EventPlayer(), Button.PrimaryFire);
+                    }
+                    else if (playerDist <= 5) {
+                        StartHoldingButton(EventPlayer(), Button.PrimaryFire);
+                    }
                 }
                 else {
                     // Whip
@@ -462,7 +473,7 @@ Event.OngoingPlayer {
             }
         }
 
-        brigShieldBashCurrentCD = Max(0, brigShieldBashCurrentCD - 0.1)
+        brigShieldBashCurrentCD = Max(0, brigShieldBashCurrentCD - 0.1);
         Wait(0.1);
     }
 }
@@ -472,7 +483,7 @@ Event.OngoingPlayer {
     for (;;) {
 
         //Reinhardt tbag
-        if (IsDummyBot(EventPlayer()) && EventPlayer().Hero() == Hero.Reinhardt) {
+        if (IsDummyBot(EventPlayer()) && (EventPlayer().Hero() == Hero.Reinhardt || EventPlayer().Hero() == Hero.Brigitte)) {
             if (CountOf(AllLivingPlayers(Team.Team2)) == 0 || !IsGameInProgress()) {
                 if (!IsCrouching(EventPlayer())) {
                     StartHoldingButton(EventPlayer(), Button.Crouch);
